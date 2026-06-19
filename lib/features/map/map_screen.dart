@@ -6,6 +6,9 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:etrip/core/mock_data.dart';
 import 'package:etrip/features/places/data/models/place_model.dart';
+import 'package:etrip/features/Itinerary/data/models/saved_itinerary.dart';
+import 'package:etrip/features/Itinerary/data/services/itinerary_storage_service.dart';
+import 'package:etrip/features/auth/data/services/local_storage_service.dart';
 
 /// 交互式地图页面 - 仅展示景点
 class MapScreen extends StatefulWidget {
@@ -37,9 +40,16 @@ class _MapScreenState extends State<MapScreen> {
   /// 备用位置（四川大学江安校区）
   static const LatLng _fallbackCenter = LatLng(30.5505, 103.9985);
 
+  // ── 行程路线面板 ──
+  bool _panelOpen = false;
+  List<SavedItinerary> _savedItineraries = [];
+  SavedItinerary? _selectedItinerary;
+  List<LatLng> _routePoints = [];
+
   @override
   void initState() {
     super.initState();
+    _loadSavedItineraries();
     _checkLocationPermission();
 
     if (widget.initialFocusPlace != null &&
@@ -141,6 +151,65 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  // ── 行程路线逻辑 ──
+
+  Future<void> _loadSavedItineraries() async {
+    final uid = LocalStorageService().currentUid;
+    if (uid == null || uid.isEmpty) return;
+    final itineraries = await ItineraryStorageService.loadAll(uid);
+    if (!mounted) return;
+    setState(() => _savedItineraries = itineraries);
+  }
+
+  void _selectItinerary(SavedItinerary itinerary) {
+    final places = itinerary.placeIds
+        .map((id) => mockPlaces.firstWhere(
+              (p) => p.id == id,
+              orElse: () => PlaceModel(
+                id: id, name: '', profileImage: '', carouselImages: [],
+                tourismType: '', category: '', cityName: '',
+                rate: 0, totalRates: 0, description: '', googleMapsLink: '',
+              ),
+            ))
+        .where((p) => p.lat != 0.0 || p.lng != 0.0)
+        .toList();
+
+    final points = places.map((p) => LatLng(p.lat, p.lng)).toList();
+
+    setState(() {
+      _selectedItinerary = itinerary;
+      _routePoints = points;
+    });
+
+    // 调整地图视野适配所有景点
+    if (points.length >= 2) {
+      final lats = points.map((p) => p.latitude);
+      final lngs = points.map((p) => p.longitude);
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: LatLngBounds(
+            LatLng(lats.reduce(min), lngs.reduce(min)),
+            LatLng(lats.reduce(max), lngs.reduce(max)),
+          ),
+          padding: const EdgeInsets.all(60),
+        ),
+      );
+    } else if (points.length == 1) {
+      _mapController.move(points.first, 16);
+    }
+  }
+
+  /// 计算从 from 到 to 的方向角（弧度），用于旋转箭头
+  double _bearing(LatLng from, LatLng to) {
+    final lat1 = from.latitude * pi / 180;
+    final lat2 = to.latitude * pi / 180;
+    final dLng = (to.longitude - from.longitude) * pi / 180;
+    final y = sin(dLng) * cos(lat2);
+    final x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLng);
+    // atan2 结果减去 pi/2，使 Icons.play_arrow（默认朝右）对准实际方向
+    return atan2(y, x) - pi / 2;
+  }
+
   /// 计算两点间的距离（公里）
   double _distanceBetween(LatLng a, LatLng b) {
     const R = 6371.0; // 地球半径（公里）
@@ -200,76 +269,103 @@ class _MapScreenState extends State<MapScreen> {
     final initZoom = hasFocus ? 16.0 : _defaultZoom;
 
     return Scaffold(
-      body: FlutterMap(
-        mapController: _mapController,
-        options: MapOptions(
-          initialCenter: initCenter,
-          initialZoom: initZoom,
-          minZoom: 3,
-          maxZoom: 18,
-          interactionOptions: const InteractionOptions(
-            flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-          ),
-          onTap: (_, __) {
-          },
-        ),
+      body: Stack(
         children: [
-          TileLayer(
-            urlTemplate:
-                'https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
-            userAgentPackageName: 'com.example.etrip',
-            maxZoom: 18,
-          ),
-          if (_currentPosition != null)
-            MarkerLayer(
-              markers: [
-                Marker(
-                  point: _currentPosition!,
-                  width: 30,
-                  height: 30,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.blue, width: 3),
-                    ),
-                  ),
-                ),
-              ],
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: initCenter,
+              initialZoom: initZoom,
+              minZoom: 3,
+              maxZoom: 18,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+              ),
+              onTap: (_, __) {
+              },
             ),
-          MarkerLayer(
-            markers: mockPlaces
-                .where((p) => p.lat != 0.0 && p.lng != 0.0)
-                .map((place) => Marker(
-                      point: LatLng(place.lat, place.lng),
-                      width: 44,
-                      height: 44,
-                      child: GestureDetector(
-                        onTap: () {
-                          _showPlaceDetails(place);
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.9),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.place,
-                            color: Colors.white,
-                            size: 22,
-                          ),
+            children: [
+              TileLayer(
+                urlTemplate:
+                    'https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+                userAgentPackageName: 'com.example.etrip',
+                maxZoom: 18,
+              ),
+              if (_currentPosition != null)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _currentPosition!,
+                      width: 30,
+                      height: 30,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.blue, width: 3),
                         ),
                       ),
-                    ))
-                .toList(),
+                    ),
+                  ],
+                ),
+              MarkerLayer(
+                markers: mockPlaces
+                    .where((p) => p.lat != 0.0 && p.lng != 0.0)
+                    .map((place) => Marker(
+                          point: LatLng(place.lat, place.lng),
+                          width: 44,
+                          height: 44,
+                          child: GestureDetector(
+                            onTap: () {
+                              _showPlaceDetails(place);
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.9),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.place,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                        ))
+                    .toList(),
+              ),
+              // 行程路线连线
+              if (_routePoints.length >= 2)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: _routePoints,
+                      color: Colors.blue,
+                      strokeWidth: 4,
+                    ),
+                  ],
+                ),
+              // 线段中点方向箭头
+              if (_routePoints.length >= 2)
+                MarkerLayer(
+                  markers: _buildArrowMarkers(),
+                ),
+            ],
+          ),
+          // 右侧行程面板（叠加在地图上方）
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: _buildRoutePanel(context),
           ),
         ],
       ),
@@ -384,6 +480,236 @@ class _MapScreenState extends State<MapScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _PlaceDetailSheet(place: place),
+    );
+  }
+
+  // ── 行程路线面板 ──
+
+  /// 构建线段中点方向箭头
+  List<Marker> _buildArrowMarkers() {
+    final markers = <Marker>[];
+    for (int i = 0; i < _routePoints.length - 1; i++) {
+      final from = _routePoints[i];
+      final to = _routePoints[i + 1];
+      final mid = LatLng(
+        (from.latitude + to.latitude) / 2,
+        (from.longitude + to.longitude) / 2,
+      );
+      markers.add(
+        Marker(
+          point: mid,
+          width: 24,
+          height: 24,
+          child: Transform.rotate(
+            angle: _bearing(from, to),
+            child: const Icon(Icons.play_arrow, color: Colors.blue, size: 24),
+          ),
+        ),
+      );
+    }
+    return markers;
+  }
+
+  Widget _buildRoutePanel(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final panelWidth = screenWidth * 2 / 3;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 切换按钮（始终显示在右侧边缘）
+        GestureDetector(
+          onTap: () => setState(() => _panelOpen = !_panelOpen),
+          child: Container(
+            width: 24,
+            height: 80,
+            margin: const EdgeInsets.only(top: 100),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(8)),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2)),
+              ],
+            ),
+            child: Center(
+              child: Icon(
+                _panelOpen
+                    ? Icons.arrow_forward_ios
+                    : Icons.arrow_back_ios,
+                size: 16,
+                color: Colors.grey[800],
+              ),
+            ),
+          ),
+        ),
+        // 面板内容
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          width: _panelOpen ? panelWidth - 24 : 0,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(-2, 0)),
+            ],
+          ),
+          child: _panelOpen ? _buildPanelContent() : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPanelContent() {
+    return Column(
+      children: [
+        // 标题
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Row(
+            children: [
+              const Text(
+                '行程路线',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const Spacer(),
+              if (_selectedItinerary != null)
+                Text(
+                  '${_routePoints.length} 个景点',
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+
+        // 选中行程的路线概览
+        if (_selectedItinerary != null && _routePoints.length >= 2)
+          _buildRouteOverview(),
+
+        if (_selectedItinerary != null && _routePoints.length >= 2)
+          const Divider(),
+
+        // 行程列表
+        Expanded(
+          child: _savedItineraries.isEmpty
+              ? Center(
+                  child: Text(
+                    '暂无保存的行程',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: _savedItineraries.length,
+                  itemBuilder: (context, index) =>
+                      _buildItineraryCard(_savedItineraries[index]),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRouteOverview() {
+    final it = _selectedItinerary!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: Colors.blue.withOpacity(0.05),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${it.city} · ${it.noOfDays}天 · ${it.budget}预算 · ${it.withWho}',
+            style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.blue),
+          ),
+          const SizedBox(height: 6),
+          ...List.generate(_routePoints.length, (i) {
+            final place = mockPlaces.firstWhere(
+              (p) =>
+                  p.lat == _routePoints[i].latitude &&
+                  p.lng == _routePoints[i].longitude,
+              orElse: () => PlaceModel(
+                id: '', name: '景点 ${i + 1}', profileImage: '',
+                carouselImages: [], tourismType: '', category: '',
+                cityName: '', rate: 0, totalRates: 0,
+                description: '', googleMapsLink: '',
+                lat: _routePoints[i].latitude,
+                lng: _routePoints[i].longitude,
+              ),
+            );
+            final nameZh =
+                placeNamesZh[place.id] ?? place.name;
+            return Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                children: [
+                  Icon(Icons.circle, size: 6, color: Colors.blue[300]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Day ${(i ~/ 2) + 1}:  $nameZh',
+                      style: const TextStyle(fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildItineraryCard(SavedItinerary itinerary) {
+    final isSelected = _selectedItinerary?.id == itinerary.id;
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      color: isSelected ? Colors.blue.withOpacity(0.08) : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: isSelected
+            ? const BorderSide(color: Colors.blue, width: 1.5)
+            : BorderSide.none,
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.blue : Colors.grey[200],
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Center(
+            child: Text(
+              '${itinerary.noOfDays}',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isSelected ? Colors.white : Colors.grey[700],
+              ),
+            ),
+          ),
+        ),
+        title: Text(
+          '${itinerary.city} · ${itinerary.budget} · ${itinerary.withWho}',
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          '${itinerary.noOfDays}天 · ${itinerary.placeIds.length}个景点',
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+        ),
+        trailing: const Icon(Icons.route, size: 20, color: Colors.blue),
+        onTap: () => _selectItinerary(itinerary),
+      ),
     );
   }
 }
