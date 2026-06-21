@@ -9,6 +9,9 @@ import 'package:etrip/features/places/data/models/place_model.dart';
 import 'package:etrip/features/Itinerary/data/models/saved_itinerary.dart';
 import 'package:etrip/features/Itinerary/data/services/itinerary_storage_service.dart';
 import 'package:etrip/features/auth/data/services/local_storage_service.dart';
+import 'package:etrip/core/localization/translations.dart';
+import 'package:etrip/core/localization/locale_cubit.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// 交互式地图页面 - 仅展示景点
 class MapScreen extends StatefulWidget {
@@ -267,6 +270,7 @@ class _MapScreenState extends State<MapScreen> {
         ? LatLng(widget.initialFocusPlace!.lat, widget.initialFocusPlace!.lng)
         : _defaultCenter;
     final initZoom = hasFocus ? 16.0 : _defaultZoom;
+    final lang = context.watch<LocaleCubit>().state.languageCode;
 
     return Scaffold(
       body: Stack(
@@ -365,7 +369,7 @@ class _MapScreenState extends State<MapScreen> {
             right: 0,
             top: 0,
             bottom: 0,
-            child: _buildRoutePanel(context),
+            child: _buildRoutePanel(context, lang),
           ),
         ],
       ),
@@ -375,12 +379,12 @@ class _MapScreenState extends State<MapScreen> {
         backgroundColor: Colors.purple,
         child: const Icon(Icons.my_location, color: Colors.white),
       ),
-      bottomSheet: _buildNearestPlacesSheet(),
+      bottomSheet: _buildNearestPlacesSheet(lang),
     );
   }
 
   /// 最近景点底部列表
-  Widget _buildNearestPlacesSheet() {
+  Widget _buildNearestPlacesSheet(String lang) {
     final nearest = _getNearestPlaces();
 
     return Container(
@@ -416,7 +420,7 @@ class _MapScreenState extends State<MapScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  _currentPosition != null ? '最近景点' : '景点列表',
+                  _currentPosition != null ? Translations.tr('map_nearest', lang) : Translations.tr('map_place_list', lang),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -429,7 +433,7 @@ class _MapScreenState extends State<MapScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : Text(
-                        '${nearest.length} 个结果',
+                        '${nearest.length} ${Translations.tr('map_results', lang)}',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
@@ -451,6 +455,7 @@ class _MapScreenState extends State<MapScreen> {
                 final location = nearest[index];
                 return _PlaceCard(
                   location: location,
+                  lang: lang,
                   onTap: () {
                     _mapController.move(
                       LatLng(location.lat, location.lng),
@@ -475,11 +480,12 @@ class _MapScreenState extends State<MapScreen> {
 
   /// 显示景点详情
   void _showPlaceDetails(PlaceModel place) {
+    final lang = context.read<LocaleCubit>().state.languageCode;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _PlaceDetailSheet(place: place),
+      builder: (context) => _PlaceDetailSheet(place: place, lang: lang),
     );
   }
 
@@ -510,7 +516,7 @@ class _MapScreenState extends State<MapScreen> {
     return markers;
   }
 
-  Widget _buildRoutePanel(BuildContext context) {
+  Widget _buildRoutePanel(BuildContext context, String lang) {
     final screenWidth = MediaQuery.of(context).size.width;
     final panelWidth = screenWidth * 2 / 3;
 
@@ -559,13 +565,13 @@ class _MapScreenState extends State<MapScreen> {
                   offset: const Offset(-2, 0)),
             ],
           ),
-          child: _panelOpen ? _buildPanelContent() : null,
+          child: _panelOpen ? _buildPanelContent(lang) : null,
         ),
       ],
     );
   }
 
-  Widget _buildPanelContent() {
+  Widget _buildPanelContent(String lang) {
     return Column(
       children: [
         // 标题
@@ -573,14 +579,14 @@ class _MapScreenState extends State<MapScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(
             children: [
-              const Text(
-                '行程路线',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                Translations.tr('map_route_plan', lang),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               if (_selectedItinerary != null)
                 Text(
-                  '${_routePoints.length} 个景点',
+                  '${_routePoints.length} ${Translations.tr('map_spots', lang)}',
                   style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                 ),
             ],
@@ -590,7 +596,7 @@ class _MapScreenState extends State<MapScreen> {
 
         // 选中行程的路线概览
         if (_selectedItinerary != null && _routePoints.length >= 2)
-          _buildRouteOverview(),
+          _buildRouteOverview(lang),
 
         if (_selectedItinerary != null && _routePoints.length >= 2)
           const Divider(),
@@ -600,7 +606,7 @@ class _MapScreenState extends State<MapScreen> {
           child: _savedItineraries.isEmpty
               ? Center(
                   child: Text(
-                    '暂无保存的行程',
+                    Translations.tr('map_no_saved', lang),
                     style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                   ),
                 )
@@ -608,14 +614,14 @@ class _MapScreenState extends State<MapScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   itemCount: _savedItineraries.length,
                   itemBuilder: (context, index) =>
-                      _buildItineraryCard(_savedItineraries[index]),
+                      _buildItineraryCard(_savedItineraries[index], lang),
                 ),
         ),
       ],
     );
   }
 
-  Widget _buildRouteOverview() {
+  Widget _buildRouteOverview(String lang) {
     final it = _selectedItinerary!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -624,7 +630,7 @@ class _MapScreenState extends State<MapScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${it.city} · ${it.noOfDays}天 · ${it.budget}预算 · ${it.withWho}',
+            '${localizedCityName(it.city, lang)} · ${it.noOfDays} ${Translations.tr('days', lang)} · ${Translations.tr(it.budget, lang)} · ${Translations.tr(it.withWho, lang)}',
             style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -637,7 +643,7 @@ class _MapScreenState extends State<MapScreen> {
                   p.lat == _routePoints[i].latitude &&
                   p.lng == _routePoints[i].longitude,
               orElse: () => PlaceModel(
-                id: '', name: '景点 ${i + 1}', profileImage: '',
+                id: '', name: '${Translations.tr('map_spot', lang)} ${i + 1}', profileImage: '',
                 carouselImages: [], tourismType: '', category: '',
                 cityName: '', rate: 0, totalRates: 0,
                 description: '', googleMapsLink: '',
@@ -647,6 +653,9 @@ class _MapScreenState extends State<MapScreen> {
             );
             final nameZh =
                 placeNamesZh[place.id] ?? place.name;
+            final dayLabel = lang == 'zh'
+                ? '第${(i ~/ 2) + 1}${Translations.tr('days', lang)}'
+                : '${Translations.tr('day', lang)} ${(i ~/ 2) + 1}';
             return Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Row(
@@ -655,7 +664,7 @@ class _MapScreenState extends State<MapScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Day ${(i ~/ 2) + 1}:  $nameZh',
+                      '$dayLabel:  $nameZh',
                       style: const TextStyle(fontSize: 13),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -669,7 +678,7 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _buildItineraryCard(SavedItinerary itinerary) {
+  Widget _buildItineraryCard(SavedItinerary itinerary, String lang) {
     final isSelected = _selectedItinerary?.id == itinerary.id;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -700,11 +709,11 @@ class _MapScreenState extends State<MapScreen> {
           ),
         ),
         title: Text(
-          '${itinerary.city} · ${itinerary.budget} · ${itinerary.withWho}',
+          '${localizedCityName(itinerary.city, lang)} · ${Translations.tr(itinerary.budget, lang)} · ${Translations.tr(itinerary.withWho, lang)}',
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
-          '${itinerary.noOfDays}天 · ${itinerary.placeIds.length}个景点',
+          '${itinerary.noOfDays} ${Translations.tr('days', lang)} · ${itinerary.placeIds.length} ${Translations.tr('map_spots', lang)}',
           style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
         trailing: const Icon(Icons.route, size: 20, color: Colors.blue),
@@ -741,9 +750,11 @@ class MapLocation {
 class _PlaceCard extends StatelessWidget {
   final MapLocation location;
   final VoidCallback onTap;
+  final String lang;
 
   const _PlaceCard({
     required this.location,
+    required this.lang,
     required this.onTap,
   });
 
@@ -774,8 +785,8 @@ class _PlaceCard extends StatelessWidget {
                     color: Colors.red.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Text(
-                    '景点',
+                  child: Text(
+                    Translations.tr('map_spot', lang),
                     style: TextStyle(
                       color: Colors.red,
                       fontSize: 10,
@@ -827,8 +838,9 @@ class _PlaceCard extends StatelessWidget {
 /// 景点详情底部弹窗
 class _PlaceDetailSheet extends StatelessWidget {
   final PlaceModel place;
+  final String lang;
 
-  const _PlaceDetailSheet({required this.place});
+  const _PlaceDetailSheet({required this.place, required this.lang});
 
   @override
   Widget build(BuildContext context) {
@@ -895,7 +907,7 @@ class _PlaceDetailSheet extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '(${place.totalRates} 评价)',
+                        '(${place.totalRates} ${Translations.tr('map_reviews', lang)})',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
@@ -908,7 +920,7 @@ class _PlaceDetailSheet extends StatelessWidget {
 
                   // 描述
                   Text(
-                    '简介',
+                    Translations.tr('map_intro', lang),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

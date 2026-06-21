@@ -323,6 +323,17 @@ class Translations {
       'chat_response_6':
           'Zhangjiajie and Guilin are perfect for nature lovers and photography!',
 
+      // Map screen
+      'map_route_plan': 'Route Plan',
+      'map_no_saved': 'No saved itineraries',
+      'map_spots': 'spots',
+      'map_nearest': 'Nearest Places',
+      'map_place_list': 'All Places',
+      'map_results': 'results',
+      'map_spot': 'Spot',
+      'map_intro': 'Introduction',
+      'map_reviews': 'reviews',
+
       // Tourism type names (full)
       'tourism_type_cultural': 'Cultural and Historical Attractions',
       'tourism_type_natural': 'Natural Attractions',
@@ -657,6 +668,17 @@ class Translations {
       'chat_response_4': '我推荐尝试北京烤鸭、火锅和小笼包。',
       'chat_response_5': '您可以乘坐长江游轮，在壮丽的风景中享受美妙的体验。',
       'chat_response_6': '张家界和桂林是自然爱好者和摄影爱好者的绝佳去处！',
+
+      // Map screen
+      'map_route_plan': '行程路线',
+      'map_no_saved': '暂无保存的行程',
+      'map_spots': '个景点',
+      'map_nearest': '最近景点',
+      'map_place_list': '景点列表',
+      'map_results': '个结果',
+      'map_spot': '景点',
+      'map_intro': '简介',
+      'map_reviews': '条评价',
 
       // Tourism type names (full)
       'tourism_type_cultural': '文化与历史景点',
