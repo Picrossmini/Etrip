@@ -3,6 +3,8 @@
 *.log
 *.pyc
 *.swp
+# 备份文件：曾经把 android/app/google-services.json.bak 误提交进仓库，往后忽略。
+*.bak
 .DS_Store
 .atom/
 .buildlog/
