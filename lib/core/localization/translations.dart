@@ -10,6 +10,7 @@ class Translations {
       'error': 'Error',
       'no_data': 'No data available',
       'or': 'OR',
+      'all': 'All',
 
       // Splash
       'etrip_title': 'Etrip',
@@ -235,6 +236,8 @@ class Translations {
       'day': 'Day',
       'new_fab': 'New',
       'trip_description': 'Trip Description',
+      'trip_description_default':
+          'A wonderful trip through China exploring cultural and natural highlights.',
       'error_loading': 'Error loading data',
 
       // Tourism types (keys match API values)
@@ -378,17 +381,18 @@ class Translations {
       'error': '错误',
       'no_data': '暂无数据',
       'or': '或',
+      'all': '全部',
 
       // Splash
       'etrip_title': 'Etrip',
 
       // Onboarding
-      'onboarding_title_1': '开始探索之旅',
-      'onboarding_sub_1': '沉浸于难忘的体验中\n让您的中国梦\n变为现实',
-      'onboarding_title_2': '轻松规划',
-      'onboarding_sub_2': '从个性化行程到专业\n旅行建议，让探索中国变得简单无忧',
-      'onboarding_title_3': '体验更多',
-      'onboarding_sub_3': '发现当地最爱、文化\n瑰宝和令人惊叹的\n冒险之旅',
+      'onboarding_title_1': '说走就走',
+      'onboarding_sub_1': '热门景点、小众秘境，你想去的这里都有',
+      'onboarding_title_2': '行程秒定',
+      'onboarding_sub_2': '从定制行程到本地贴士，规划中国之旅轻松无负担',
+      'onboarding_title_3': '专属灵感',
+      'onboarding_sub_3': 'AI个性化精准推荐心仪景点，畅游大美中国',
       'onboarding_next': '下一步',
       'onboarding_skip': '跳过',
       'onboarding_get_started': '开始',
@@ -578,7 +582,7 @@ class Translations {
       'plan_your_trip': '规划您的旅程',
       'days': '天数',
       'budget': '预算',
-      'travel_with': '同行',
+      'travel_with': '与谁同行',
       'low': '低',
       'medium': '中',
       'high': '高',
@@ -596,6 +600,7 @@ class Translations {
       'day': '天',
       'new_fab': '新建',
       'trip_description': '行程描述',
+      'trip_description_default': '一段穿越中国、探索文化与自然精华的美妙旅程。',
       'error_loading': '加载数据失败',
 
       // Tourism types (keys match API values)

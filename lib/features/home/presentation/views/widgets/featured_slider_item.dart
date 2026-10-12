@@ -19,6 +19,14 @@ class FeaturedSliderItem extends StatelessWidget {
   final VoidCallback? onTap;
   final String? description;
 
+  // English canonical values stored into favorites (display uses the localized
+  // fields above; storage stays language-independent).
+  final String? nameEn;
+  final String? cityEn;
+  final String? categoryEn;
+  final String? tourismTypeEn;
+  final String? descriptionEn;
+
   final String? googleMapsLink;
 
   final int? totalRates;
@@ -39,6 +47,11 @@ class FeaturedSliderItem extends StatelessWidget {
     this.tourismType,
     this.onTap,
     this.description,
+    this.nameEn,
+    this.cityEn,
+    this.categoryEn,
+    this.tourismTypeEn,
+    this.descriptionEn,
     this.googleMapsLink,
     this.totalRates,
     this.carousel,
@@ -172,13 +185,13 @@ class FeaturedSliderItem extends StatelessWidget {
                     iconSize: 30,
                     id: placeId!,
                     type: FavoriteType.place,
-                    title: name ?? '',
+                    title: nameEn ?? name ?? '',
                     imageUrl: imageUrl ?? '',
-                    city: cityName ?? '',
-                    category: category ?? '',
+                    city: cityEn ?? cityName ?? '',
+                    category: categoryEn ?? category ?? '',
                     rate: rate?.toString() ?? '0.0',
-                    tourismType: tourismType ?? '',
-                    description: description ?? '',
+                    tourismType: tourismTypeEn ?? tourismType ?? '',
+                    description: descriptionEn ?? description ?? '',
                     googleMapsLink: googleMapsLink ?? '',
                     totalRates: totalRates ?? 0,
                     carousel: carousel ?? [],

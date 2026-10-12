@@ -32,12 +32,10 @@ class _PlacesScreenState extends State<PlacesScreen> {
   String? selectedCity;
   String? selectedTourismType;
   String? selectedPopularity;
-  String? selectedCategory;
 
   // Filter options
   List<String> cities = [];
   List<String> tourismTypes = [];
-  List<String> categories = [];
   List<String> popularityOptions = [];
 
   // All and filtered places
@@ -81,16 +79,11 @@ class _PlacesScreenState extends State<PlacesScreen> {
           selectedCity == null || place.cityName == selectedCity;
       final bool matchesTourismType = selectedTourismType == null ||
           place.tourismType == selectedTourismType;
-      final bool matchesCategory =
-          selectedCategory == null || place.category == selectedCategory;
       final bool matchesPopularity = selectedPopularity == null ||
           selectedPopularity == 'All' ||
           place.category ==
               selectedPopularity; // غير شرط الشعبية لو عندك حاجة خاصة
-      return matchesCity &&
-          matchesTourismType &&
-          matchesCategory &&
-          matchesPopularity;
+      return matchesCity && matchesTourismType && matchesPopularity;
     }).toList();
   }
 
@@ -105,7 +98,6 @@ class _PlacesScreenState extends State<PlacesScreen> {
     setState(() {
       selectedCity = null;
       selectedTourismType = null;
-      selectedCategory = null;
       selectedPopularity = null;
       displayedPlaces = List.from(allPlaces);
     });
@@ -131,22 +123,18 @@ class _PlacesScreenState extends State<PlacesScreen> {
             final data = snapshot.data ?? {};
             cities = data['cities'] ?? [];
             tourismTypes = data['tourismTypes'] ?? [];
-            categories = data['categories'] ?? [];
             popularityOptions = data['popularity'] ?? [];
 
             return PlacesDrawer(
               cities: cities,
               tourismTypes: tourismTypes,
-              categories: categories,
               popularityOptions: popularityOptions,
               selectedCity: selectedCity,
               selectedTourismType: selectedTourismType,
-              selectedCategory: selectedCategory,
               selectedPopularity: selectedPopularity,
               onCityChange: (val) => setState(() => selectedCity = val),
               onTourismTypeChange: (val) =>
                   setState(() => selectedTourismType = val),
-              onCategoryChange: (val) => setState(() => selectedCategory = val),
               onPopularityChange: (val) =>
                   setState(() => selectedPopularity = val),
               onClear: clearFilters,

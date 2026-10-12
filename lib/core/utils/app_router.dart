@@ -2,9 +2,6 @@ import 'package:etrip/features/Itinerary/presentation/views/itinerary_result_vie
 import 'package:etrip/features/Itinerary/presentation/views/itinerary_step_one.dart';
 import 'package:etrip/features/Profile/presentation/views/widgets/about_me.dart';
 import 'package:etrip/features/Profile/presentation/views/widgets/edit_profile.dart';
-import 'package:etrip/features/Profile/presentation/views/widgets/preference_one.dart';
-import 'package:etrip/features/Profile/presentation/views/widgets/preference_three.dart';
-import 'package:etrip/features/Profile/presentation/views/widgets/preference_two.dart';
 import 'package:etrip/features/auth/data/models/egyptopia_user.dart';
 import 'package:etrip/features/home/presentation/views/home_view.dart';
 import 'package:etrip/features/map/map_screen.dart';
@@ -41,9 +38,6 @@ abstract class AppRouter {
   static const kWishList = '/wishList';
   static const kEditProfile = '/editProfile';
   static const kAboutMe = '/aboutme';
-  static const kPreferenceOne = '/preferenceOne';
-  static const kPreferenceTwo = '/preferenceTwo';
-  static const kPreferenceThree = '/preferenceThree';
   static const kItineraryStepone = '/itineraryStepone';
   static const kItineraryResult = '/itineraryResult';
   static const kMap = '/map';
@@ -103,18 +97,6 @@ abstract class AppRouter {
             user: user,
           );
         }),
-    GoRoute(
-      path: kPreferenceOne,
-      builder: (context, state) => const PreferenceOne(),
-    ),
-    GoRoute(
-      path: kPreferenceTwo,
-      builder: (context, state) => const PreferenceTwo(),
-    ),
-    GoRoute(
-      path: kPreferenceThree,
-      builder: (context, state) => const PreferenceThree(),
-    ),
       GoRoute(
       path: kItineraryStepone,
       builder: (context, state) => const ItineraryStepOne(),

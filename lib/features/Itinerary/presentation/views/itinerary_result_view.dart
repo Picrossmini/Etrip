@@ -3,9 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:etrip/core/constants.dart';
 import 'package:etrip/core/localization/locale_cubit.dart';
 import 'package:etrip/core/localization/translations.dart';
 import 'package:etrip/core/utils/app_router.dart';
+import 'package:etrip/core/widgets/bamboo_texture.dart';
 import 'package:etrip/features/Itinerary/data/generators/backend_travel_plan_generator.dart';
 import 'package:etrip/features/Itinerary/data/models/itinerary_request.dart';
 import 'package:etrip/features/Itinerary/data/models/itinerary_response.dart';
@@ -121,25 +123,43 @@ class _ItineraryResultViewState extends State<ItineraryResultView> {
           body: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color.fromARGB(255, 237, 239, 241), Colors.white],
+                colors: kSecondaryColor,
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
+                stops: [0, 0.6],
               ),
             ),
-            child: Column(
+            child: Stack(
               children: [
-                AppBar(
-                  title: Text(
-                    '${Translations.tr('day', lang)} 1-${widget.args['noOfDays']}',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                  ),
-                  centerTitle: true,
-                  leading: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios),
-                    onPressed: _goBack,
-                  ),
+                const Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: BambooTexture(color: Colors.black),
                 ),
-                Expanded(child: _body(lang)),
+                Column(
+                  children: [
+                    AppBar(
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      foregroundColor: Colors.white,
+                      title: Text(
+                        lang == 'zh'
+                            ? '第1天-第${widget.args['noOfDays']}天'
+                            : 'Day 1-${widget.args['noOfDays']}',
+                        style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600, color: Colors.white),
+                      ),
+                      centerTitle: true,
+                      leading: IconButton(
+                        icon: const Icon(Icons.arrow_back_ios,
+                            color: Colors.white),
+                        onPressed: _goBack,
+                      ),
+                    ),
+                    Expanded(child: _body(lang)),
+                  ],
+                ),
               ],
             ),
           ),
@@ -235,7 +255,7 @@ class _ItineraryResultViewState extends State<ItineraryResultView> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12.0),
             child: Text(
-              resp.description,
+              Translations.tr(resp.description, lang),
               style:
                   const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
@@ -244,7 +264,7 @@ class _ItineraryResultViewState extends State<ItineraryResultView> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Text(
-                  "${Translations.tr('day', lang)} ${entry.key}",
+                  lang == 'zh' ? '第${entry.key}天' : 'Day ${entry.key}',
                   style: GoogleFonts.montserrat(
                       fontSize: 25,
                       fontWeight: FontWeight.w600,

@@ -36,17 +36,16 @@ void main() {
     await pumpItineraryResultView(tester, generator: generator);
     await tester.pumpAndSettle();
 
-    final dayWord = Translations.tr('day', 'en');
     expect(find.text('sample'), findsOneWidget);
-    expect(find.text('$dayWord 1'), findsOneWidget);
-    expect(find.text('$dayWord 2'), findsOneWidget);
+    expect(find.text('Day 1'), findsOneWidget);
+    expect(find.text('Day 2'), findsOneWidget);
     expect(find.byType(PlaceCard), findsWidgets);
     expect(find.text('Test Place 1'), findsOneWidget);
 
     // 第 3 天在首屏之外：往下滚能滚到，说明列表是通的、内容没丢
     await tester.drag(find.byType(ListView), const Offset(0, -600));
     await tester.pumpAndSettle();
-    expect(find.text('$dayWord 3'), findsOneWidget);
+    expect(find.text('Day 3'), findsOneWidget);
     expect(find.text('Test Place 3'), findsOneWidget);
   });
 
@@ -103,24 +102,18 @@ void main() {
   });
 
   testWidgets('中英文切换：标题文案随语言变化', (tester) async {
-    // 前提：两种语言确实有不同文案，否则下面的断言没有意义
-    expect(
-      Translations.tr('day', 'en'),
-      isNot(Translations.tr('day', 'zh')),
-    );
-
     final generator = FakeTravelPlanGenerator(result: responseWithDays(1));
 
     await pumpItineraryResultView(tester, generator: generator, locale: 'en');
     await tester.pumpAndSettle();
-    expect(find.text('${Translations.tr('day', 'en')} 1'), findsOneWidget);
+    expect(find.text('Day 1'), findsOneWidget);
 
     // 先清空整棵树，否则 BlocProvider.create 不会重跑，语言还是 en
     await tester.pumpWidget(const SizedBox());
     await pumpItineraryResultView(tester, generator: generator, locale: 'zh');
     await tester.pumpAndSettle();
-    expect(find.text('${Translations.tr('day', 'zh')} 1'), findsOneWidget);
-    expect(find.text('${Translations.tr('day', 'en')} 1'), findsNothing);
+    expect(find.text('第1天'), findsOneWidget);
+    expect(find.text('Day 1'), findsNothing);
   });
 
   testWidgets('空状态在中文下也显示中文', (tester) async {

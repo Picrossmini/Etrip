@@ -1,4 +1,5 @@
 import 'search_item.dart';
+import 'package:etrip/core/localization/translations.dart';
 import 'package:etrip/core/mock_data.dart';
 import 'package:etrip/features/places/data/models/place_model.dart';
 
@@ -22,7 +23,7 @@ class UnifiedSearchService {
       imageUrl: p.profileImage.isNotEmpty ? p.profileImage : (p.carouselImages.isNotEmpty ? p.carouselImages.first : ""),
       city: lang == 'zh' ? (cityNamesZh[p.cityName] ?? p.cityName) : p.cityName,
       rating: p.rate.toString(),
-      info: p.category,
+      info: Translations.trCategory(p.category, lang),
     )).toList();
   }
 }

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:etrip/core/constants.dart';
 import 'package:etrip/core/localization/locale_cubit.dart';
 import 'package:etrip/core/localization/translations.dart';
 import 'package:etrip/core/mock_data.dart';
+import 'package:etrip/core/widgets/bamboo_texture.dart';
 import 'package:etrip/core/widgets/space_widget.dart';
 import 'package:etrip/features/Itinerary/data/models/saved_itinerary.dart';
 import 'package:etrip/features/Itinerary/domain/itinerary_repository.dart';
@@ -39,18 +41,46 @@ class _ItineraryHomeState extends State<ItineraryHome> {
   Widget build(BuildContext context) {
     final lang = context.watch<LocaleCubit>().state.languageCode;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(Translations.tr('itinerary', lang),
-            style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'new_itinerary',
         onPressed: widget.onNewItinerary,
         backgroundColor: Theme.of(context).primaryColor,
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: FutureBuilder<List<SavedItinerary>>(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: kSecondaryColor,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: [0, 0.6],
+          ),
+        ),
+        child: Stack(
+          children: [
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: BambooTexture(color: Colors.black),
+            ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  children: [
+                    const VerticalSpace(2),
+                    Text(
+                      Translations.tr('itinerary', lang),
+                      style: GoogleFonts.merriweather(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const VerticalSpace(2),
+                    Expanded(
+                      child: FutureBuilder<List<SavedItinerary>>(
         key: ValueKey(_refreshKey),
         future: widget.repository.loadAll(widget.userId),
         builder: (context, snapshot) {
@@ -160,6 +190,14 @@ class _ItineraryHomeState extends State<ItineraryHome> {
             },
           );
         },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
