@@ -1,5 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- App 要联网：行程与聊天都走自建后端，天气工具走 OpenWeatherMap。
+         Flutter 模板只在 debug/profile 里声明了 INTERNET，release 包里没有，
+         那样打出来的 APK 一联网就全挂——所以在这里补上。 -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
