@@ -7,16 +7,18 @@ import 'package:etrip/core/localization/translations.dart';
 import 'package:etrip/core/mock_data.dart';
 import 'package:etrip/core/widgets/space_widget.dart';
 import 'package:etrip/features/Itinerary/data/models/saved_itinerary.dart';
-import 'package:etrip/features/Itinerary/data/services/itinerary_storage_service.dart';
+import 'package:etrip/features/Itinerary/domain/itinerary_repository.dart';
 
 class ItineraryHome extends StatefulWidget {
   final String userId;
+  final ItineraryRepository repository;
   final VoidCallback onNewItinerary;
   final Function(Map<String, dynamic> args) onViewItinerary;
 
   const ItineraryHome({
     super.key,
     required this.userId,
+    required this.repository,
     required this.onNewItinerary,
     required this.onViewItinerary,
   });
@@ -29,7 +31,7 @@ class _ItineraryHomeState extends State<ItineraryHome> {
   int _refreshKey = 0;
 
   Future<void> _delete(String id) async {
-    await ItineraryStorageService.delete(widget.userId, id);
+    await widget.repository.delete(widget.userId, id);
     setState(() => _refreshKey++);
   }
 
@@ -50,7 +52,7 @@ class _ItineraryHomeState extends State<ItineraryHome> {
       ),
       body: FutureBuilder<List<SavedItinerary>>(
         key: ValueKey(_refreshKey),
-        future: ItineraryStorageService.loadAll(widget.userId),
+        future: widget.repository.loadAll(widget.userId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

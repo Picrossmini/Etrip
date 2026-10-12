@@ -1,0 +1,9 @@
+# 给用例打标签，CI 里按标签挑/排除。
+#
+#   flutter test --exclude-tags golden
+#
+# golden（像素基准图）只在本地跑：它跟平台的字形栅格化绑死，
+# 换个 runner 就会整体偏一点点，天天误报。理由写在
+# test/golden/itinerary_result_view_golden_test.dart 的文件头。
+tags:
+  golden:

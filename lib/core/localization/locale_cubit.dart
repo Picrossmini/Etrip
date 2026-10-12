@@ -3,8 +3,15 @@ import 'package:hive/hive.dart';
 import 'package:bloc/bloc.dart';
 
 class LocaleCubit extends Cubit<Locale> {
-  LocaleCubit() : super(const Locale('en')) {
-    _loadSavedLocale();
+  /// [initial] 与 [restoreSaved] 供测试注入：给固定语言、不碰 Hive。
+  /// 默认参数保持原行为，App 里 `LocaleCubit()` 不受影响。
+  LocaleCubit({
+    Locale initial = const Locale('en'),
+    bool restoreSaved = true,
+  }) : super(initial) {
+    if (restoreSaved) {
+      _loadSavedLocale();
+    }
   }
 
   static const String _boxName = 'app_settings';

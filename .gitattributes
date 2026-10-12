@@ -1,0 +1,16 @@
+# 统一行尾：仓库里一律按 LF 存。
+# 这个仓库之前没有 .gitattributes，工作区是 CRLF 而仓库里存的是 LF，
+# 于是 291 个文件被误报成「已修改」，其中真正改过的只有 15 个。
+* text=auto eol=lf
+
+# Windows 批处理必须 CRLF，否则可能跑不起来。
+*.bat text eol=crlf
+
+# 二进制，别让 git 做行尾转换，否则图/字体会被弄坏。
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ttf binary
+*.otf binary
+*.jar binary

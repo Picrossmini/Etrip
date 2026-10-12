@@ -103,13 +103,17 @@ class FavoriteCard extends StatelessWidget {
                               children: [
                                 const Icon(Icons.location_on, size: 16),
                                 const HorizantalSpace(0.5),
-                                Text(
-                                  fav.city,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color.fromARGB(
-                                        255, 119, 119, 119),
+                                Expanded(
+                                  child: Text(
+                                    fav.city,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color.fromARGB(
+                                          255, 119, 119, 119),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
@@ -121,12 +125,16 @@ class FavoriteCard extends StatelessWidget {
                                 children: [
                                   const Icon(Icons.category, size: 16),
                                   const HorizantalSpace(0.5),
-                                  Text(
-                                    '${Translations.tr('category_label', lang)}${fav.category}',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black,
+                                  Expanded(
+                                    child: Text(
+                                      '${Translations.tr('category_label', lang)}${fav.category}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
@@ -163,12 +171,16 @@ class FavoriteCard extends StatelessWidget {
                                   const Icon(Icons.star,
                                       size: 16, color: Colors.amber),
                                   const HorizantalSpace(0.5),
-                                  Text(
-                                    '${Translations.tr('rating_label', lang)}${fav.rate}',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black,
+                                  Expanded(
+                                    child: Text(
+                                      '${Translations.tr('rating_label', lang)}${fav.rate}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],

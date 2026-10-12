@@ -45,3 +45,9 @@ app.*.map.json
 # Secrets / API keys — keep out of version control.
 # Copy lib/core/config.example.dart to lib/core/config.dart and fill in your keys.
 lib/core/config.dart
+
+# golden 比对失败时 flutter_test 会往这里丢差异图，别提交。
+test/**/failures/
+
+# flutter test --coverage 的产物，CI 里现算现传（artifact），不进仓库。
+coverage/

@@ -364,6 +364,9 @@ class Translations {
       'error_update_profile': 'Error updating profile',
       'n_a': 'N/A',
       'no_internet': 'No internet connection',
+
+      // Itinerary
+      'no_plan_generated': 'No itinerary was generated',
     },
     'zh': {
       // App
@@ -710,6 +713,9 @@ class Translations {
       'error_update_profile': '更新个人资料失败',
       'n_a': '暂无',
       'no_internet': '没有网络连接',
+
+      // 行程
+      'no_plan_generated': '暂未生成行程',
     },
   };
 

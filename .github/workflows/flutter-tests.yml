@@ -1,0 +1,88 @@
+name: Flutter 测试
+
+# 每次 push 和每个 PR 都跑。没写分支过滤是因为开发在 test 分支上，
+# 团队还有另一个 remote，与其猜分支名不如全跑。
+on:
+  push:
+  pull_request:
+
+# 同一个分支连着推几次，前面的跑完就作废，省 runner
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: 分析 + 单元 + Widget
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 取代码
+        uses: actions/checkout@v4
+
+      - name: 装 Flutter（跟本地一致）
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.7
+          channel: stable
+          cache: true
+
+      # lib/core/config.dart 被 gitignore 了（里面是密钥），但 lib/ 下有几个文件
+      # import 它。不生成的话，全新 checkout 一上来 analyze 就会报「找不到目标文件」，
+      # 第一次推上去 CI 直接是红的。模板里是占位值，够编译；测试不打真实网络，
+      # 占位 key 不影响结果，也不会把真密钥带进仓库。
+      - name: 生成 config.dart（密钥不入库）
+        run: cp lib/core/config.example.dart lib/core/config.dart
+
+      - name: 取依赖
+        run: flutter pub get
+
+      # 只把 error / warning 当失败。lib/ 里另有 39 条历史遗留的 info
+      # （const 建议、withOpacity 已废弃之类），是既有代码的风格问题，
+      # 不在这次改动的范围内，所以显式 --no-fatal-infos。
+      - name: 静态分析
+        run: flutter analyze --no-fatal-infos
+
+      # 为什么排除 golden：像素基准图跟平台的字形栅格化绑死，本机生成的图搬到
+      # Linux runner 上会整体偏一点，天天误报。它只在本地当「改完前后对比」用，
+      # 生成命令写在 test/golden/ 那个文件头里。
+      #
+      # integration_test/ 不在 flutter test 的默认目录里，所以不会被带上——
+      # 那份要真机，本地 `flutter test integration_test/app_flows_test.dart -d <device>` 跑。
+      - name: 单元 + Widget 测试（带覆盖率）
+        run: flutter test --exclude-tags golden --coverage
+
+      # 覆盖率报告直接写进日志，省得每次都要点进 artifact 才能看数字
+      - name: 打印覆盖率摘要
+        run: |
+          python3 - <<'PY'
+          files, hit, found, path, fh, ff = [], 0, 0, None, 0, 0
+          with open('coverage/lcov.info', encoding='utf-8') as fp:
+              for line in fp:
+                  if line.startswith('SF:'):
+                      path, fh, ff = line[3:].strip(), 0, 0
+                  elif line.startswith('DA:'):
+                      taken = int(line[3:].split(',')[1])
+                      ff += 1
+                      found += 1
+                      if taken > 0:
+                          fh += 1
+                          hit += 1
+                  elif line.startswith('end_of_record'):
+                      if path and ff:
+                          files.append((fh / ff, path, ff))
+                      path = None
+          print(f'总行覆盖率：{hit}/{found} = {hit / found * 100:.1f}%')
+          print('')
+          print('覆盖率最低的几个文件（优先级参考）：')
+          for pct, name, lines in sorted(files)[:5]:
+              short = name[name.find('/lib/') + 1:] if '/lib/' in name else name
+              print(f'  {pct * 100:5.1f}%  ({lines} 行)  {short}')
+          PY
+
+      - name: 上传覆盖率报告
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          if-no-files-found: error

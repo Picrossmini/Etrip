@@ -1,54 +1,20 @@
-import 'dart:convert';
+import 'package:etrip/features/Itinerary/data/models/saved_itinerary.dart';
+import 'package:etrip/features/Itinerary/data/repositories/hive_itinerary_repository.dart';
+import 'package:etrip/features/Itinerary/domain/itinerary_repository.dart';
 
-import 'package:hive/hive.dart';
-
-import '../models/saved_itinerary.dart';
-
+/// 兼容旧调用点的静态门面（如 map_screen）。
+///
+/// 内部委托给可注入的 [ItineraryRepository] 实现。新代码应直接依赖
+/// [ItineraryRepository]（便于测试注入），不要再调用这里的静态方法。
 class ItineraryStorageService {
-  static const String _boxName = 'saved_itineraries';
+  static final ItineraryRepository _repository = HiveItineraryRepository();
 
-  static Box<String>? _box;
+  static Future<void> save(SavedItinerary itinerary) =>
+      _repository.save(itinerary);
 
-  static Future<Box<String>> get _boxInstance async {
-    if (_box != null && _box!.isOpen) return _box!;
-    _box = await Hive.openBox<String>(_boxName);
-    return _box!;
-  }
+  static Future<List<SavedItinerary>> loadAll(String userId) =>
+      _repository.loadAll(userId);
 
-  static String _key(String userId) => 'itineraries_$userId';
-
-  /// Save a new itinerary for a user.
-  static Future<void> save(SavedItinerary itinerary) async {
-    final box = await _boxInstance;
-    final key = _key(itinerary.userId);
-    final list = _loadList(box.get(key));
-    list.add(itinerary);
-    box.put(key, jsonEncode(list.map((e) => e.toJson()).toList()));
-  }
-
-  /// Load all saved itineraries for a user (newest first).
-  static Future<List<SavedItinerary>> loadAll(String userId) async {
-    final box = await _boxInstance;
-    final key = _key(userId);
-    final list = _loadList(box.get(key));
-    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return list;
-  }
-
-  /// Delete a saved itinerary by ID.
-  static Future<void> delete(String userId, String itineraryId) async {
-    final box = await _boxInstance;
-    final key = _key(userId);
-    final list = _loadList(box.get(key));
-    list.removeWhere((i) => i.id == itineraryId);
-    box.put(key, jsonEncode(list.map((e) => e.toJson()).toList()));
-  }
-
-  static List<SavedItinerary> _loadList(String? raw) {
-    if (raw == null || raw.isEmpty) return [];
-    final List<dynamic> arr = jsonDecode(raw) as List<dynamic>;
-    return arr
-        .map((e) => SavedItinerary.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
+  static Future<void> delete(String userId, String itineraryId) =>
+      _repository.delete(userId, itineraryId);
 }
