@@ -3,7 +3,8 @@
 class AppConfig {
   static const String apiBaseUrl = "http://192.168.1.2:8000";
 
-  // DeepSeek chatbot
-  static const String deepseekApiKey = "YOUR_DEEPSEEK_API_KEY";
-  static const String deepseekBaseUrl = "https://api.deepseek.com";
+  // 自建后端（etrip-backend）：生成行程走 POST /api/itinerary，聊天走 POST /api/chat。
+  // DeepSeek 密钥只存在于服务端的环境变量里，客户端不再持有它，只带一个访问令牌。
+  static const String backendBaseUrl = "http://192.168.1.2:8000";
+  static const String backendToken = "YOUR_BACKEND_TOKEN";
 }

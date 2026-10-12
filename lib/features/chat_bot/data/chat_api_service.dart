@@ -1,19 +1,42 @@
 import 'dart:convert';
 
-import 'package:etrip/core/config.dart';
 import 'package:etrip/core/mock_data.dart';
 import 'package:etrip/features/auth/data/egyptopia_api_service.dart';
 import 'package:etrip/features/auth/data/services/local_storage_service.dart';
+import 'package:etrip/features/chat_bot/data/backend_chat_completer.dart';
+import 'package:etrip/features/chat_bot/domain/chat_completer.dart';
 import 'package:etrip/features/weather/data/weather_api.dart';
 import 'package:etrip/features/wishlist/data/service/favorite_service.dart';
-import 'package:http/http.dart' as http;
 
-class DeepSeekApiService {
-  static const String _model = 'deepseek-chat';
-  static final Uri _endpoint =
-      Uri.parse('${AppConfig.deepseekBaseUrl}/chat/completions');
+/// 查天气的入口（可注入，便于测试里换掉真实网络调用）。
+typedef WeatherLookup = Future<Map<String, dynamic>> Function(
+  String city, {
+  String lang,
+});
 
-  final WeatherApi _weatherApi = WeatherApi();
+/// 聊天机器人的业务层：拼系统提示词 → 调模型 → 需要时执行工具 → 再调一轮。
+///
+/// 这里只做「循环」，一次补全交给 [ChatCompleter]：
+/// - 生产环境是 [BackendChatCompleter]，走自建后端的 `POST /api/chat`，
+///   **DeepSeek 密钥留在服务端**，客户端不再持有；
+/// - 测试里换成假的，就能确定性地验证工具循环。
+///
+/// 工具（查天气）仍然在客户端执行 —— 天气 API 的密钥不必再往服务端搬一份，
+/// 后端只当透传。因此循环也只能留在客户端，每轮补全都是独立的一次请求。
+class ChatApiService {
+  /// 最多两轮工具调用，之后强制要求直接回答。
+  static const int _maxToolRounds = 2;
+
+  final ChatCompleter _completer;
+  final WeatherLookup _weatherLookup;
+
+  ChatApiService({
+    ChatCompleter? completer,
+    WeatherLookup? weatherLookup,
+  })  : _completer = completer ?? BackendChatCompleter(),
+        _weatherLookup = weatherLookup ??
+            ((city, {String lang = 'en'}) =>
+                WeatherApi().getWeatherByCity(city, lang: lang));
 
   static const List<Map<String, dynamic>> _tools = [
     {
@@ -48,17 +71,26 @@ class DeepSeekApiService {
         },
     ];
 
-    // Allow at most two tool rounds before forcing a plain answer.
-    for (var round = 0; round < 3; round++) {
-      final message = await _complete(messages, withTools: round < 2);
-      final toolCalls = message['tool_calls'] as List?;
+    for (var round = 0; ; round++) {
+      // 前两轮带上工具定义；再往后就不带了，逼模型直接把话说出来。
+      final completion = await _completer.complete(
+        messages: messages,
+        tools: round < _maxToolRounds ? _tools : null,
+      );
 
-      if (toolCalls == null || toolCalls.isEmpty) {
-        return (message['content'] as String?)?.trim() ?? '';
+      if (!completion.wantsTools) {
+        return completion.content;
       }
 
-      messages.add(message);
-      for (final call in toolCalls) {
+      // 已经是不带工具的那一轮，模型还在要求调工具 —— 不再无谓地循环下去。
+      if (round >= _maxToolRounds) {
+        throw const ChatException('模型连续要求调用工具，已放弃这一轮');
+      }
+
+      // 助手这条（含 tool_calls）必须原样入史，接着把每个工具结果按 id 接上去，
+      // 否则下一轮上游会因为「tool_call 没有对应的结果」直接报错。
+      messages.add(completion.message);
+      for (final call in completion.toolCalls) {
         messages.add({
           'role': 'tool',
           'tool_call_id': call['id'],
@@ -66,35 +98,6 @@ class DeepSeekApiService {
         });
       }
     }
-    throw Exception('DeepSeek: too many tool rounds');
-  }
-
-  Future<Map<String, dynamic>> _complete(
-    List<Map<String, dynamic>> messages, {
-    required bool withTools,
-  }) async {
-    final response = await http
-        .post(
-          _endpoint,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ${AppConfig.deepseekApiKey}',
-          },
-          body: jsonEncode({
-            'model': _model,
-            'messages': messages,
-            'max_tokens': 600,
-            if (withTools) 'tools': _tools,
-          }),
-        )
-        .timeout(const Duration(seconds: 45));
-
-    if (response.statusCode != 200) {
-      throw Exception('DeepSeek API error ${response.statusCode}');
-    }
-
-    final data = jsonDecode(utf8.decode(response.bodyBytes));
-    return Map<String, dynamic>.from(data['choices'][0]['message']);
   }
 
   Future<String> _executeTool(Map<String, dynamic> call, String lang) async {
@@ -105,7 +108,7 @@ class DeepSeekApiService {
     try {
       final args = jsonDecode(function['arguments'] ?? '{}');
       final city = (args['city'] ?? '').toString();
-      final weather = await _weatherApi.getWeatherByCity(
+      final weather = await _weatherLookup(
         city,
         lang: lang == 'zh' ? 'zh_cn' : 'en',
       );

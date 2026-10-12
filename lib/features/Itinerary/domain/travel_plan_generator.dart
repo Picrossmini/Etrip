@@ -7,8 +7,9 @@ import 'package:etrip/features/Itinerary/data/models/itinerary_response.dart';
 /// 抽象，不能直接 new 具体实现，否则测试时无法替换成固定夹具。
 ///
 ///   TravelPlanGenerator
-///     ├─ LlmTravelPlanGenerator   （真实实现，调 DeepSeek）
-///     └─ MockTravelPlanGenerator  （离线/演示实现）
+///     ├─ BackendTravelPlanGenerator（生产默认：走自建后端，密钥不在客户端）
+///     ├─ LlmTravelPlanGenerator    （直连 DeepSeek；仅冒烟用例与本地调试用）
+///     └─ MockTravelPlanGenerator   （离线/演示实现）
 ///
 /// 测试里再注入 FakeTravelPlanGenerator（见 test/support）。
 abstract class TravelPlanGenerator {

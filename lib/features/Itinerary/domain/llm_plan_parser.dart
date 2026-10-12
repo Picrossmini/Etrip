@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:etrip/features/Itinerary/data/models/itinerary_request.dart';
 import 'package:etrip/features/Itinerary/data/models/itinerary_response.dart';
 import 'package:etrip/features/Itinerary/domain/itinerary_plan_schema.dart';
+import 'package:etrip/features/Itinerary/domain/plan_hydrator.dart';
 import 'package:etrip/features/places/data/models/place_model.dart';
 
 /// 大模型返回内容无法解析成一份合法行程时抛出。
@@ -19,7 +20,10 @@ class ItineraryParseException implements Exception {
 /// 纯函数、无 IO —— 因此「正常 / 缺字段 / 类型错误 / 非法 JSON / 空 / 超长」
 /// 这些夹具可以被确定性地、毫秒级地测到（超时属于 HTTP 层，见生成器）。
 class LlmPlanParser {
-  const LlmPlanParser();
+  final PlanHydrator _hydrator;
+
+  const LlmPlanParser({PlanHydrator hydrator = const PlanHydrator()})
+      : _hydrator = hydrator;
 
   /// 从 OpenAI 兼容的响应 envelope（choices[0].message.content）中取出助手文本。
   static String extractContent(String responseBody) {
@@ -111,48 +115,24 @@ class LlmPlanParser {
     return null;
   }
 
-  /// 把 place_id 水合成真实的 [PlaceModel]，并按顺序重新编号 1..N。
-  ///
-  /// 生成的行程必须能正常展示，所以：
-  /// - 未知 id 直接丢弃；
-  /// - 某天一个都没匹配上时用目录里的景点兜底，保证每天非空。
+  /// 把 `days[].place_ids` 交给 [PlanHydrator] 水合成真实的 [PlaceModel]。
   ItineraryResponse _hydrate(Map<String, dynamic> data, List<PlaceModel> catalog) {
-    final byId = <String, PlaceModel>{for (final p in catalog) p.id: p};
     final rawDays = data['days'] as List;
-    final plan = <int, List<PlaceModel>>{};
-    final usedIds = <String>{};
-
-    var dayNumber = 1;
-    for (final entry in rawDays) {
-      final item = entry as Map;
-      final ids = item['place_ids'] as List;
-      final places = <PlaceModel>[];
-      for (final id in ids) {
-        final place = byId[id?.toString()];
-        if (place != null) {
-          places.add(place);
-          usedIds.add(place.id);
-        }
-      }
-      if (places.isEmpty) {
-        final fallback = catalog.firstWhere(
-          (p) => !usedIds.contains(p.id),
-          orElse: () => catalog.first,
-        );
-        places.add(fallback);
-        usedIds.add(fallback.id);
-      }
-      plan[dayNumber] = places;
-      dayNumber++;
-    }
+    final dayPlaceIds = [
+      for (final entry in rawDays)
+        [
+          for (final id in (entry as Map)['place_ids'] as List)
+            id?.toString() ?? '',
+        ],
+    ];
 
     final description =
         data['description'] is String ? (data['description'] as String).trim() : '';
 
-    return ItineraryResponse(
-      noOfDays: plan.length,
-      plan: plan,
+    return _hydrator.hydrate(
+      dayPlaceIds: dayPlaceIds,
       description: description,
+      catalog: catalog,
     );
   }
 }

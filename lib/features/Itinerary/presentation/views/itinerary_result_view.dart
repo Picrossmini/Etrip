@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:etrip/core/localization/locale_cubit.dart';
 import 'package:etrip/core/localization/translations.dart';
 import 'package:etrip/core/utils/app_router.dart';
-import 'package:etrip/features/Itinerary/data/generators/llm_travel_plan_generator.dart';
+import 'package:etrip/features/Itinerary/data/generators/backend_travel_plan_generator.dart';
 import 'package:etrip/features/Itinerary/data/models/itinerary_request.dart';
 import 'package:etrip/features/Itinerary/data/models/itinerary_response.dart';
 import 'package:etrip/features/Itinerary/data/repositories/hive_itinerary_repository.dart';
@@ -21,7 +21,7 @@ class ItineraryResultView extends StatefulWidget {
   final Map<String, dynamic> args;
   final VoidCallback? onStartNew;
 
-  /// 可注入依赖：默认使用真实 DeepSeek 生成器 + Hive 仓储。
+  /// 可注入依赖：默认走自建后端 + Hive 仓储。
   final TravelPlanGenerator? generator;
   final ItineraryRepository? repository;
 
@@ -53,7 +53,7 @@ class _ItineraryResultViewState extends State<ItineraryResultView> {
       _savedResponse = _buildSavedResponse();
     } else {
       final controller = ItineraryGenerationController(
-        generator: widget.generator ?? LlmTravelPlanGenerator(),
+        generator: widget.generator ?? BackendTravelPlanGenerator(),
         repository: widget.repository ?? HiveItineraryRepository(),
       );
       _controller = controller;

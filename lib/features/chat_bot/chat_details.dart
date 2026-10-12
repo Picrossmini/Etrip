@@ -11,7 +11,7 @@ import 'package:etrip/core/widgets/reusable_screen.dart';
 import 'package:etrip/core/widgets/robot_panda_logo.dart';
 import 'package:etrip/core/widgets/space_widget.dart';
 import 'package:etrip/features/chat_bot/data/chat_history_service.dart';
-import 'package:etrip/features/chat_bot/data/deepseek_api_service.dart';
+import 'package:etrip/features/chat_bot/data/chat_api_service.dart';
 
 class ChatDetails extends StatefulWidget {
   const ChatDetails({super.key});
@@ -23,7 +23,7 @@ class ChatDetails extends StatefulWidget {
 class _ChatDetailsState extends State<ChatDetails> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final DeepSeekApiService _api = DeepSeekApiService();
+  final ChatApiService _api = ChatApiService();
   final List<Map<String, String>> _messages = [];
   bool _isSending = false;
   Timer? _typingTimer;
