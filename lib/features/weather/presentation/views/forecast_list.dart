@@ -31,9 +31,17 @@ class ForecastList extends StatelessWidget {
                     style: GoogleFonts.lato(color: Colors.white),
                   ),
                   const VerticalSpace(1),
-                  Image.network(
-                    "https://openweathermap.org/img/wn/${forecast['icon']}@2x.png",
-                    width: SizeConfig.defaultSize! * 5,
+                  // 图标套一层 Flexible：卡片高度是写死的（上面 defaultSize * 15），
+                  // 而文字行高会随设备字体度量/系统字号变化——真机（2026-10-13 联调）
+                  // 就是在这张卡里底部溢出 6.9px。给图标一个「可压缩」的弹性，
+                  // 多出来的那点高度由它吃掉，文字变大也不会再顶出卡片。
+                  // 内容装得下时它仍按原尺寸显示，视觉不变。
+                  Flexible(
+                    child: Image.network(
+                      "https://openweathermap.org/img/wn/${forecast['icon']}@2x.png",
+                      width: SizeConfig.defaultSize! * 5,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                   const VerticalSpace(1),
                   Text(
